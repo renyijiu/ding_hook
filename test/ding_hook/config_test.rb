@@ -9,11 +9,7 @@ class DingHook::DingTest < Minitest::Test
     }
 
     config = DingHook::Config.instance
-    res = config.configuration do |tmp|
-      params.each do |key, value|
-        tmp[key] = value
-      end
-    end
+    res = config.configuration(params)
 
     assert_equal params, res
   end

@@ -6,10 +6,8 @@ module DingHook
   class Config
     include Singleton
 
-    def configuration
-      config = {}.tap { |config| yield(config) }
-
-      yaml_settings.tap do |tmp_config|
+    def configuration(config = {})
+      @config ||= yaml_settings.tap do |tmp_config|
         config.each do |key, value|
           tmp_config[key.to_sym] = value if value
         end
