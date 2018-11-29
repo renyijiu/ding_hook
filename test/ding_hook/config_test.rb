@@ -3,6 +3,8 @@ require 'test_helper'
 class DingHook::DingTest < Minitest::Test
 
   def test_it_should_set_configuration
+    Singleton.__init__(::DingHook::Config)
+
     params = {
         author: 'renyijiu',
         email: 'me@renyijiu.com'

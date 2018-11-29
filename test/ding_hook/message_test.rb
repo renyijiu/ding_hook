@@ -3,27 +3,40 @@ require 'test_helper'
 class DingHook::DingTest < Minitest::Test
 
   def setup
-    DingHook::Message.any_instance.stubs(:post).returns(OpenStruct.new(body: {errmsg: 'ok', errcode: 0}.to_json))
+    Singleton.__init__(DingHook::Config)
 
-    @url = 'https://oapi.dingtalk.com/robot/send'
+    DingHook::Message.any_instance.stubs(:post).returns(OpenStruct.new(body: {errmsg: 'ok', errcode: 0}.to_json))
+    DingHook.configure do |config|
+      config[:default] = 'helloworld'
+    end
+
     @ding = DingHook::Message.new
   end
 
-  def test_is_send_invalid_message_type
+  def test_it_send_invalid_message_type
     params = {}
 
     assert_raises DingHook::Exception::MsgTypeError do
-      @ding.send_msg(@url, params, :test)
+      @ding.send_msg(params, :hello, :test)
     end
   end
+
+  def test_it_send_invalid_account
+    params = {}
+
+    assert_raises DingHook::Exception::AccountError do
+      @ding.send_msg(params, :test, :text)
+    end
+  end
+
 
   def test_it_should_send_text_message
     params = {
         text: 'renyijiu'
     }
 
-    res = @ding.send_msg(@ur, params, :text)
-    assert_equal 0, res['errcode']
+    flag, _ = @ding.send_msg(params,:default, :text)
+    assert flag
   end
 
   def test_it_should_send_link_message
@@ -34,8 +47,8 @@ class DingHook::DingTest < Minitest::Test
         message_url: 'https://renyijiu.com'
     }
 
-    res = @ding.send_msg(@ur, params, :link)
-    assert_equal 0, res['errcode']
+    flag, _ = @ding.send_msg(params, :default, :link)
+    assert flag
   end
 
   def test_it_should_send_markdown_message
@@ -46,8 +59,8 @@ class DingHook::DingTest < Minitest::Test
         is_at_all: true
     }
 
-    res = @ding.send_msg(@url, params, :markdown)
-    assert_equal 0, res['errcode']
+    flag, _ = @ding.send_msg(params, :default, :markdown)
+    assert flag
   end
 
   def test_it_should_send_action_card_single
@@ -60,8 +73,8 @@ class DingHook::DingTest < Minitest::Test
         hide_avator: 1
     }
 
-    res = @ding.send_msg(@url, params, :action_card)
-    assert_equal 0, res['errcode']
+    flag, _ = @ding.send_msg(params, :default, :action_card)
+    assert flag
   end
 
   def test_it_should_send_action_card_btns
@@ -78,8 +91,8 @@ class DingHook::DingTest < Minitest::Test
         ]
     }
 
-    res = @ding.send_msg(@url, params, :action_card)
-    assert_equal 0, res['errcode']
+    flag, _ = @ding.send_msg(params, :default, :action_card)
+    assert flag
   end
 
   def test_it_should_send_feed_card
@@ -93,8 +106,8 @@ class DingHook::DingTest < Minitest::Test
         ]
     }
 
-    res = @ding.send_msg(@url, params, :feed_card)
-    assert_equal 0, res['errcode']
+    flag, _ = @ding.send_msg(params, :default, :feed_card)
+    assert flag
   end
 
 end

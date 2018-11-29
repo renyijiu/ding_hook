@@ -1,11 +1,14 @@
 require "test_helper"
 
 class DingHookTest < Minitest::Test
+
   def test_that_it_has_a_version_number
     refute_nil ::DingHook::VERSION
   end
 
   def test_is_should_set_config
+    Singleton.__init__(DingHook::Config)
+
     params = {
         author: 'renyijiu',
         email: 'me@renyijiu.com'

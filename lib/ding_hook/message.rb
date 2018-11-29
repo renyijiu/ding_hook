@@ -5,18 +5,20 @@ require 'net/http'
 
 module DingHook
   class Message
+    include DingHook::Valid
 
-    VALID_TYPE = [:text, :link, :markdown, :action_card, :feed_card]
+    BASE_URL = 'https://oapi.dingtalk.com/robot/send?access_token='.freeze
 
-    def send_msg(hook_url, params, type = :text)
-      if VALID_TYPE.include?(type.to_sym)
-        body = send("#{type}_body_params".to_sym, params)
-      else
-        raise DingHook::Exception::MsgTypeError, "无效消息类型，目前支持：#{VALID_TYPE.join(', ')}"
-      end
+    def send_msg(params, account, type = :text)
+      check_msg_type_valid(type)
+      check_account_valid(account)
+
+      body = send("#{type}_body_params".to_sym, params)
+      hook_url = BASE_URL + DingHook.config.fetch(account.to_sym)
 
       res = post(hook_url, body)
-      JSON.parse(res.body.force_encoding('UTF-8'))
+      res = JSON.parse(res.body.force_encoding('UTF-8'))
+      [res['errcode'] == 0, res['errmsg']]
     end
 
     private
