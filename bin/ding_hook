@@ -1,0 +1,198 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "optparse"
+require "ding_hook"
+
+class DingHookOptparser
+
+  class Parser
+    def initialize
+      @result = {}
+    end
+
+    def result
+      @result
+    end
+
+    def define_options(parser)
+      parser.banner = "Usage: ding_hook [options]"
+      parser.separator ""
+      parser.separator "Specific options:"
+
+      type_option(parser)
+      accounts_option(parser)
+      config_option(parser)
+      text_option(parser)
+      title_option(parser)
+      mobiles_option(parser)
+      at_all_option(parser)
+      message_url_option(parser)
+      pic_url_option(parser)
+      btn_orientation_option(parser)
+      hide_avator_option(parser)
+      btns_option(parser)
+      single_title_option(parser)
+      single_url_option(parser)
+      links_option(parser)
+
+      parser.separator ""
+      parser.separator "Common options:"
+
+      parser.on_tail("-h", "--help", "Show the help message") do
+        puts parser
+        exit
+      end
+      # Another typical switch to print the version.
+      parser.on_tail("-v", "--version", "Show version") do
+        puts DingHook::VERSION
+        exit
+      end
+    end
+
+    private
+
+    def type_option(parser)
+      parser.on("-t", "--type TYPE", [:text, :link, :markdown, :action_card, :feed_card], "the type of msg to send: text, link, markdown, action_card, feed_card") do |type|
+        @result[:type] = type.to_sym
+      end
+    end
+
+    def accounts_option(parser)
+      parser.on("-a", "--accounts <Account1,Account2...>", Array, "the accounts that want to send msg") do |accounts|
+        @result[:accounts] = accounts.map(&:to_sym)
+      end
+    end
+
+    def config_option(parser)
+      parser.on("-c", "--config <Account,Access_token>", Array, "the config of accounts") do |config|
+        tmp_config = @result[:config] || []
+        @result[:config] = tmp_config << config
+      end
+    end
+
+    def text_option(parser)
+      parser.on("--text TEXT", String, "the content of msg") do |text|
+        tmp_params = @result[:params] || {}
+        tmp_params[:text] = text
+        @result[:params] = tmp_params
+      end
+    end
+
+    def title_option(parser)
+      parser.on("--title TITLE", String, "the title of msg") do |title|
+        tmp_params = @result[:params] || {}
+        tmp_params[:title] = title
+        @result[:params] = tmp_params
+      end
+    end
+
+    def mobiles_option(parser)
+      parser.on("--mobiles <Phone_no_1,Phone_no_2...>", Array, "the array of mobiles that want to @") do |mobiles|
+        tmp_params = @result[:params] || {}
+        tmp_params[:at_mobiles] = mobiles || []
+        @result[:params] = tmp_params
+      end
+    end
+
+    def at_all_option(parser)
+      parser.on("--[no-]all", "the option is want to @all") do |all|
+        tmp_params = result[:params] || {}
+        tmp_params[:is_at_all] = all
+        @result[:params] = tmp_params
+      end
+    end
+
+    def message_url_option(parser)
+      parser.on("--msg-url", String, "the message url of msg") do |msg_url|
+        tmp_params = result[:params] || {}
+        tmp_params[:message_url] = msg_url
+        @result[:params] = tmp_params
+      end
+    end
+
+    def pic_url_option(parser)
+      parser.on("--pic-url", String, "the picture url of msg") do |pic_url|
+        tmp_params = result[:params] || {}
+        tmp_params[:pic_url] = msg_url
+        @result[:params] = tmp_params
+      end
+    end
+
+    def btn_orientation_option(parser)
+      parser.on("--[no-]btn-vertical", "Buttons are arranged vertically") do |btn|
+        tmp_params = result[:params] || {}
+        tmp_params[:btn_orientation] = btn ? '0' : '1'
+        @result[:params] = tmp_params
+      end
+    end
+
+    def hide_avator_option(parser)
+      parser.on("--[no-]show-avator", "show the avator of sender") do |show_avator|
+        tmp_params = result[:params] || {}
+        tmp_params[:hide_avator] = show_avator ? '0' : '1'
+        @result[:params] = tmp_params
+      end
+    end
+
+    def btns_option(parser)
+      parser.on("--btns <Title,ActionURL>", Array, "multi btns for action card") do |btn|
+        tmp_params = result[:params] || {}
+        tmp_btns = tmp_params[:btns] || []
+        tmp_params[:btns] = tmp_btns << {title: btn.first, action_url: btn.last}
+        @result[:params] = tmp_params
+      end
+    end
+
+    def single_title_option(parser)
+      parser.on("--single-title Single_title", String, "the single btn title for action card") do |single_title|
+        tmp_params = result[:params] || {}
+        tmp_params[:single_title] = single_title
+        @result[:params] = tmp_params
+      end
+    end
+
+    def single_url_option(parser)
+      parser.on("--single-url Single_url", String, "the single btn url for action card") do |single_url|
+        tmp_params = result[:params] || {}
+        tmp_params[:single_url] = single_url
+        @result[:params] = tmp_params
+      end
+    end
+
+    def links_option(parser)
+      parser.on("--links <Title,MessageURL,PicURL>", Array, "the links for feed card") do |link|
+        tmp_params = result[:params] || {}
+        tmp_links = tmp_params[:links] || []
+
+        title, msg_url, pic_url = link
+        tmp_params[:links] = tmp_links << {title: title, message_url: msg_url, pic_url: pic_url}
+        @result[:params] = tmp_params
+      end
+    end
+  end
+
+  attr_reader :parser, :options
+  def parse(args)
+    @options = Parser.new
+    @args = OptionParser.new do |parser|
+      @options.define_options(parser)
+      parser.parse!(args)
+    end
+
+    @options.result
+  end
+end
+
+parser = DingHookOptparser.new
+options = parser.parse(ARGV)
+
+DingHook.configure do |config|
+  accounts = options[:config] || []
+
+  accounts.each do |account|
+    config[account.first.to_sym] = account.last
+  end
+end
+
+DingHook.send_msg(options[:params], options[:type], options[:accounts])
