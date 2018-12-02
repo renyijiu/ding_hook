@@ -9,16 +9,23 @@ module DingHook
 
     BASE_URL = 'https://oapi.dingtalk.com/robot/send?access_token='.freeze
 
-    def send_msg(params, account, type = :text)
+    def send_msg(params, accounts, type = :text)
+      accounts = accounts.is_a?(Array) ? accounts : [accounts]
       check_msg_type_valid(type)
-      check_account_valid(account)
+      check_account_valid(accounts)
 
+      result = []
       body = send("#{type}_body_params".to_sym, params)
-      hook_url = BASE_URL + DingHook.config.fetch(account.to_sym)
 
-      res = post(hook_url, body)
-      res = JSON.parse(res.body.force_encoding('UTF-8'))
-      [res['errcode'] == 0, res['errmsg']]
+      accounts.each do |account|
+        hook_url = BASE_URL + DingHook.config.fetch(account.to_sym)
+
+        res = post(hook_url, body)
+        res = JSON.parse(res.body.force_encoding('UTF-8'))
+        result << [res['errcode'] == 0, res['errmsg']]
+      end
+
+      result.inject([true, '']) {|res, arr| [res.first && arr.first, res.last + arr.last]}
     end
 
     private

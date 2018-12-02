@@ -9,11 +9,13 @@ module DingHook
       end
     end
 
-    def check_account_valid(account)
-      token = DingHook.config.fetch(account.to_sym, nil)
+    def check_account_valid(accounts)
+      accounts.each do |account|
+        token = DingHook.config.fetch(account.to_sym, nil)
 
-      if token.nil?
-        raise DingHook::Exception::AccountError, "#{account} 对应的access_token未配置"
+        if token.nil?
+          raise DingHook::Exception::AccountError, "#{account} 对应的access_token未配置"
+        end
       end
     end
 
